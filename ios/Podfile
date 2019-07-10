@@ -29,6 +29,9 @@ target 'setbuddy' do
   pod 'Folly', :podspec => '../node_modules/react-native/third-party-podspecs/Folly.podspec'
 
 
+
+  pod 'react-native-sqlite-storage', :path => '../node_modules/react-native-sqlite-storage'
+
   target 'setbuddyTests' do
     inherit! :search_paths
     # Pods for testing
