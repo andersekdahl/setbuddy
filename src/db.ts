@@ -5,6 +5,7 @@ let db: SQLite.SQLiteDatabase;
 export async function open() {
   if (!db) {
     db = await SQLite.openDatabase({ name: 'setbuddy', location: 'default' });
+    await migrateIfNeeded(db);
   }
   return db;
 }
@@ -34,15 +35,11 @@ export async function select<TResult>(sql: string, params: any[]): Promise<TResu
 type MigrationFunction = (db: SQLite.SQLiteDatabase) => Promise<unknown>;
 const migrations: { [name: string]: MigrationFunction } = {};
 
-export async function migrateIfNeeded() {
-  const db = await open();
+async function migrateIfNeeded(db: SQLite.SQLiteDatabase) {
   await executeSql('CREATE TABLE IF NOT EXISTS migrations (name TEXT PRIMARY KEY, executed_at INTEGER)', []);
-  const results = await executeSql('SELECT name FROM migrations', []);
-  const previouslyExecutedMigrations = [];
-  for (let i = 0; i < results.rows.length; i++) {
-    previouslyExecutedMigrations.push(results.rows.item(i));
-  }
-
+  const previouslyExecutedMigrations = (await select<MigrationRow>('SELECT * FROM migrations', [])).map(m => m.name);
+  console.log('previouslyExecutedMigrations', previouslyExecutedMigrations);
+  console.log('Object.keys(migrations)', Object.keys(migrations));
   for (const migrationName of Object.keys(migrations)) {
     if (previouslyExecutedMigrations.indexOf(migrationName) === -1) {
       await migrations[migrationName](db);
@@ -57,3 +54,8 @@ export async function migrateIfNeeded() {
 export function registerMigration(date: number, name: string, migration: MigrationFunction) {
   migrations[date + '_' + name] = migration;
 }
+
+type MigrationRow = {
+  name: string;
+  created_at: number;
+};
