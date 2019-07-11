@@ -1,6 +1,6 @@
 import React from 'react';
 import { createStackNavigator, createAppContainer } from 'react-navigation';
-import { AllGymsScreen, GymScreen } from './gym/screens';
+import { AllGymsScreen, GymScreen, EditOrCreateGym } from './gym/screens';
 
 const AppNavigator = createStackNavigator({
   Home: {
@@ -8,6 +8,12 @@ const AppNavigator = createStackNavigator({
   },
   Gym: {
     screen: GymScreen,
+  },
+  EditGym: {
+    screen: EditOrCreateGym,
+  },
+  CreateGym: {
+    screen: EditOrCreateGym,
   },
 });
 
