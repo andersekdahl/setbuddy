@@ -18,11 +18,37 @@ export async function getGym(id: string) {
 export async function create(gym: Omit<Gym, 'id'>) {
   const gymId = await uuid.getRandomUUID();
   await executeSql('INSERT INTO gyms (id, name) VALUES(?, ?)', [gymId, gym.name]);
+  triggerEventListeners({ gymId: gymId, type: 'create' });
   return gymId;
 }
 
 export async function update(gym: Gym) {
   await executeSql('UPDATE gyms SET name = ? WHERE id = ?', [gym.name, gym.id]);
+  triggerEventListeners({ gymId: gym.id, type: 'update' });
+}
+
+export async function remove(gymId: string) {
+  await executeSql('DELETE FROM gyms WHERE id = ?', [gymId]);
+  triggerEventListeners({ gymId: gymId, type: 'remove' });
+}
+
+type GymEvent = { gymId: string; type: 'create' | 'update' | 'remove' };
+type EventListener = (event: GymEvent) => unknown;
+const eventListeners: EventListener[] = [];
+export function addEventListener(listener: EventListener) {
+  eventListeners.push(listener);
+  return () => {
+    const index = eventListeners.indexOf(listener);
+    if (index !== -1) {
+      eventListeners.splice(index, 1);
+    }
+  };
+}
+
+function triggerEventListeners(event: GymEvent) {
+  for (const listener of eventListeners) {
+    listener(event);
+  }
 }
 
 export function useAllGyms() {
@@ -31,7 +57,12 @@ export function useAllGyms() {
     (async () => {
       setAllGyms(await getAllGyms());
     })();
+
+    return addEventListener(async e => {
+      setAllGyms(await getAllGyms());
+    });
   }, []);
+
   return allGyms;
 }
 
@@ -41,6 +72,12 @@ export function useGym(id: string) {
     (async () => {
       setGym(await getGym(id));
     })();
+
+    return addEventListener(async e => {
+      if (e.gymId === id) {
+        setGym(await getGym(id));
+      }
+    });
   }, [id]);
   return gym;
 }
