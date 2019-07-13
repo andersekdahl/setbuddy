@@ -11,8 +11,15 @@ export function getAllGyms() {
   return select<Gym>('SELECT * FROM gyms', []);
 }
 
-export async function getGym(id: string) {
-  return (await select<Gym>('SELECT * FROM gyms WHERE id = ?', [id]))[0];
+export async function getGymsByExercise(exerciseId: string) {
+  return await select<Gym>(
+    'SELECT g.* FROM gyms AS g INNER JOIN gyms_exercises AS wg ON g.id = wg.gym_id WHERE wg.exercise_id = ?',
+    [exerciseId],
+  );
+}
+
+export async function getGym(gymId: string) {
+  return (await select<Gym>('SELECT * FROM gyms WHERE id = ?', [gymId]))[0];
 }
 
 export async function create(gym: Omit<Gym, 'id'>) {
@@ -32,10 +39,20 @@ export async function remove(gymId: string) {
   triggerEventListeners({ gymId: gymId, type: 'remove' });
 }
 
-type GymEvent = { gymId: string; type: 'create' | 'update' | 'remove' };
+export async function addGymExercise(gymId: string, exerciseId: string) {
+  await executeSql('INSERT INTO gyms_exercises (gym_id, exercise_id) VALUES(?, ?)', [gymId, exerciseId]);
+  triggerEventListeners({ gymId: gymId, type: 'create', relation: 'exercise', exerciseId: exerciseId });
+}
+
+export async function removeGymExercise(gymId: string, exerciseId: string) {
+  await executeSql('DELETE FROM gyms_exercises WHERE gym_id = ? AND exercise_id = ?', [gymId, exerciseId]);
+  triggerEventListeners({ gymId: gymId, type: 'remove', relation: 'exercise', exerciseId: exerciseId });
+}
+
+type GymEvent = { gymId: string; exerciseId?: string; relation?: 'exercise'; type: 'create' | 'update' | 'remove' };
 type EventListener = (event: GymEvent) => unknown;
 const eventListeners: EventListener[] = [];
-export function addEventListener(listener: EventListener) {
+export function onDataChange(listener: EventListener) {
   eventListeners.push(listener);
   return () => {
     const index = eventListeners.indexOf(listener);
@@ -58,7 +75,7 @@ export function useAllGyms() {
       setAllGyms(await getAllGyms());
     })();
 
-    return addEventListener(async e => {
+    return onDataChange(async e => {
       setAllGyms(await getAllGyms());
     });
   }, []);
@@ -73,7 +90,7 @@ export function useGym(id: string) {
       setGym(await getGym(id));
     })();
 
-    return addEventListener(async e => {
+    return onDataChange(async e => {
       if (e.gymId === id) {
         setGym(await getGym(id));
       }
@@ -82,9 +99,32 @@ export function useGym(id: string) {
   return gym;
 }
 
+export function useGymsByExercise(exerciseId: string | null) {
+  const [gyms, setGyms] = React.useState<Gym[]>([]);
+  React.useEffect(() => {
+    if (!exerciseId) {
+      return;
+    }
+
+    (async () => {
+      setGyms(await getGymsByExercise(exerciseId));
+    })();
+
+    return onDataChange(async e => {
+      if (e.exerciseId === exerciseId) {
+        setGyms(await getGymsByExercise(exerciseId));
+      }
+    });
+  }, []);
+
+  return gyms;
+}
+
 registerMigration(201907300803, 'create-gyms', async db => {
   await db.executeSql('CREATE TABLE gyms (id TEXT PRIMARY KEY, name TEXT NOT NULL, lat NUMERIC, lng NUMERIC)');
 
   const gymId = await uuid.getRandomUUID();
   await db.executeSql('INSERT INTO gyms (id, name) VALUES(?, ?)', [gymId, 'My local gym']);
+
+  await db.executeSql('CREATE TABLE gyms_exercises (gym_id TEXT, exercise_id TEXT, PRIMARY KEY(gym_id, exercise_id))');
 });
