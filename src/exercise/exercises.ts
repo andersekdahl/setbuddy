@@ -148,8 +148,8 @@ export function useAllExercises() {
   return allExercises;
 }
 
-export function useExercise(exerciseId: string) {
-  const [exercise, setExercise] = React.useState<Exercise | Omit<Exercise, 'id'>>({ name: '' });
+export function useExercise(exerciseId: string | undefined) {
+  const [exercise, setExercise] = React.useState<Exercise | NewExercise>({ name: '' });
   React.useEffect(() => {
     if (!exerciseId) {
       return;
@@ -168,9 +168,13 @@ export function useExercise(exerciseId: string) {
   return exercise;
 }
 
-export function useExerciseMusclegroups(exerciseId: string) {
+export function useExerciseMusclegroups(exerciseId: string | undefined) {
   const [exerciseMusclegroups, setExerciseMusclegroups] = React.useState<string[]>([]);
   React.useEffect(() => {
+    if (!exerciseId) {
+      return;
+    }
+
     (async () => {
       setExerciseMusclegroups(await getExerciseMusclegroups(exerciseId));
     })();

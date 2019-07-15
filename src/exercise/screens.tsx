@@ -1,15 +1,7 @@
 import React from 'react';
 import { useStateFromProp } from '../hooks';
-import {
-  useAllExercises,
-  useExercise,
-  update,
-  create,
-  Exercise,
-  NewExercise,
-  allMusclegroups,
-  useExerciseMusclegroups,
-} from './exercises';
+import { useAllExercises, useExercise, update, create, allMusclegroups, useExerciseMusclegroups } from './exercises';
+import { getNavParam, getNavParamOrThrow } from '../utils';
 import { useAllGyms, useGymsByExercise } from '../gym/gyms';
 import { StyleSheet, ScrollView, View, Text, TouchableHighlight, Button, TextInput, CheckBox } from 'react-native';
 import { NavigationScreenProps, NavigationScreenComponent, NavigationStackScreenOptions } from 'react-navigation';
@@ -39,10 +31,12 @@ AllExercisesScreen.navigationOptions = {
   title: 'All exercises',
 };
 
-export const ExerciseScreen: NavigationScreenComponent<{ exerciseId: string }, NavigationStackScreenOptions> = (
+type ExerciseScreenParams = { exerciseId: string };
+
+export const ExerciseScreen: NavigationScreenComponent<ExerciseScreenParams, NavigationStackScreenOptions> = (
   props: NavigationScreenProps,
 ) => {
-  const exerciseId = props.navigation.getParam('exerciseId');
+  const exerciseId = getNavParamOrThrow(props, 'exerciseId');
   const exercise = useExercise(exerciseId);
   const exerciseGyms = useGymsByExercise(exerciseId);
   const exerciseMusclegroups = useExerciseMusclegroups(exerciseId);
@@ -67,24 +61,30 @@ export const ExerciseScreen: NavigationScreenComponent<{ exerciseId: string }, N
     </View>
   );
 };
-ExerciseScreen.navigationOptions = ({ navigation }) => ({
+ExerciseScreen.navigationOptions = props => ({
   title: 'Exercise',
   headerRight: (
     <Button
-      onPress={() => navigation.navigate('EditExercise', { exerciseId: navigation.getParam('exerciseId') })}
+      onPress={() =>
+        props.navigation.navigate('EditExercise', {
+          exerciseId: getNavParam(props as NavigationScreenProps<ExerciseScreenParams>, 'exerciseId'),
+        })
+      }
       title="Edit"
     />
   ),
 });
 
-export const EditOrCreateExercise: NavigationScreenComponent = (props: NavigationScreenProps) => {
-  const exerciseId = props.navigation.getParam('exerciseId');
+type EditOrCreateExerciseScreenParams = { exerciseId?: string };
+
+export const EditOrCreateExercise: NavigationScreenComponent = (
+  props: NavigationScreenProps<EditOrCreateExerciseScreenParams>,
+) => {
+  const exerciseId = getNavParam(props, 'exerciseId');
   const isCreate = !exerciseId;
   const exercise = useExercise(exerciseId);
 
-  const exerciseName = exercise ? exercise.name : '';
-  const [name, setName] = useStateFromProp(exerciseName);
-  React.useEffect(() => setName(exerciseName), [exerciseName]);
+  const [name, setName] = useStateFromProp(exercise.name);
 
   const allGyms = useAllGyms();
   const exerciseGyms = useGymsByExercise(exerciseId);

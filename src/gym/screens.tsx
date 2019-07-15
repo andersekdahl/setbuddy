@@ -40,7 +40,7 @@ export const EditOrCreateGym = (props: NavigationScreenProps<{ gymId?: string }>
   const isCreate = !gymId;
   const gym = useGym(gymId);
 
-  const [name, setName] = useStateFromProp(gym ? gym.name : '');
+  const [name, setName] = useStateFromProp(gym.name);
 
   return (
     <View>
