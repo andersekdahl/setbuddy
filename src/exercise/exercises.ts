@@ -3,9 +3,12 @@ import { select, executeSql, registerMigration } from '../db';
 import { addGymExercise, removeGymExercise, getGymsByExercise } from '../gym/gyms';
 import uuid from 'react-native-uuid-generator';
 
-export type Exercise = {
-  id: string;
+export type NewExercise = {
   name: string;
+};
+
+export type Exercise = NewExercise & {
+  id: string;
 };
 
 export type ExerciseMuscleGroup = {
@@ -146,8 +149,12 @@ export function useAllExercises() {
 }
 
 export function useExercise(exerciseId: string) {
-  const [exercise, setExercise] = React.useState<Exercise | null>(null);
+  const [exercise, setExercise] = React.useState<Exercise | Omit<Exercise, 'id'>>({ name: '' });
   React.useEffect(() => {
+    if (!exerciseId) {
+      return;
+    }
+
     (async () => {
       setExercise(await getExercise(exerciseId));
     })();

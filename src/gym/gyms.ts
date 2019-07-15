@@ -2,9 +2,12 @@ import React from 'react';
 import { select, executeSql, registerMigration } from '../db';
 import uuid from 'react-native-uuid-generator';
 
-export type Gym = {
-  id: string;
+export type NewGym = {
   name: string;
+};
+
+export type Gym = NewGym & {
+  id: string;
 };
 
 export function getAllGyms() {
@@ -83,23 +86,26 @@ export function useAllGyms() {
   return allGyms;
 }
 
-export function useGym(id: string) {
-  const [gym, setGym] = React.useState<Gym | null>(null);
+export function useGym(gymId: string | undefined) {
+  const [gym, setGym] = React.useState<Gym | NewGym>({ name: '' });
   React.useEffect(() => {
+    if (!gymId) {
+      return;
+    }
     (async () => {
-      setGym(await getGym(id));
+      setGym(await getGym(gymId));
     })();
 
     return onDataChange(async e => {
-      if (e.gymId === id) {
-        setGym(await getGym(id));
+      if (e.gymId === gymId) {
+        setGym(await getGym(gymId));
       }
     });
-  }, [id]);
+  }, [gymId]);
   return gym;
 }
 
-export function useGymsByExercise(exerciseId: string | null) {
+export function useGymsByExercise(exerciseId: string | undefined) {
   const [gyms, setGyms] = React.useState<Gym[]>([]);
   React.useEffect(() => {
     if (!exerciseId) {

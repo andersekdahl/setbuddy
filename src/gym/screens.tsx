@@ -1,9 +1,11 @@
 import React from 'react';
+import { useStateFromProp } from '../hooks';
 import { useAllGyms, useGym, update, create, Gym } from './gyms';
 import { StyleSheet, ScrollView, View, Text, TouchableHighlight, Button, TextInput } from 'react-native';
 import { NavigationScreenProps } from 'react-navigation';
+import { getNavParam, getNavParamOrThrow } from '../utils';
 
-export const AllGymsScreen = (props: NavigationScreenProps) => {
+export const AllGymsScreen = (props: NavigationScreenProps<{}>) => {
   const allGyms = useAllGyms();
 
   return (
@@ -23,8 +25,8 @@ export const AllGymsScreen = (props: NavigationScreenProps) => {
   );
 };
 
-export const GymScreen = (props: NavigationScreenProps) => {
-  const gym = useGym(props.navigation.getParam('gymId'));
+export const GymScreen = (props: NavigationScreenProps<{ gymId: string }>) => {
+  const gym = useGym(getNavParamOrThrow(props, 'gymId'));
 
   return (
     <View>
@@ -33,15 +35,12 @@ export const GymScreen = (props: NavigationScreenProps) => {
   );
 };
 
-export const EditOrCreateGym = (props: NavigationScreenProps) => {
-  let gym: Gym | null = null;
-  const gymId = props.navigation.getParam('gymId');
+export const EditOrCreateGym = (props: NavigationScreenProps<{ gymId?: string }>) => {
+  const gymId = getNavParam(props, 'gymId');
   const isCreate = !gymId;
-  if (gymId) {
-    gym = useGym(gymId);
-  }
+  const gym = useGym(gymId);
 
-  const [name, setName] = React.useState(gym ? gym.name : '');
+  const [name, setName] = useStateFromProp(gym ? gym.name : '');
 
   return (
     <View>

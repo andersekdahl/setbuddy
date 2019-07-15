@@ -1,10 +1,12 @@
 import React from 'react';
+import { useStateFromProp } from '../hooks';
 import {
   useAllExercises,
   useExercise,
   update,
   create,
   Exercise,
+  NewExercise,
   allMusclegroups,
   useExerciseMusclegroups,
 } from './exercises';
@@ -76,22 +78,19 @@ ExerciseScreen.navigationOptions = ({ navigation }) => ({
 });
 
 export const EditOrCreateExercise: NavigationScreenComponent = (props: NavigationScreenProps) => {
-  let exercise: Exercise | null = null;
   const exerciseId = props.navigation.getParam('exerciseId');
   const isCreate = !exerciseId;
-  if (exerciseId) {
-    exercise = useExercise(exerciseId);
-  }
+  const exercise = useExercise(exerciseId);
 
   const exerciseName = exercise ? exercise.name : '';
-  const [name, setName] = React.useState(exerciseName);
+  const [name, setName] = useStateFromProp(exerciseName);
   React.useEffect(() => setName(exerciseName), [exerciseName]);
 
   const allGyms = useAllGyms();
   const exerciseGyms = useGymsByExercise(exerciseId);
-  const [exerciseGymIds, setExerciseGymIds] = React.useState(exerciseGyms.map(wg => wg.id));
+  const [exerciseGymIds, setExerciseGymIds] = useStateFromProp(exerciseGyms.map(wg => wg.id));
   const currentExerciseMusclegroups = useExerciseMusclegroups(exerciseId);
-  const [exerciseMusclegroups, setExerciseMusclegroups] = React.useState(currentExerciseMusclegroups);
+  const [exerciseMusclegroups, setExerciseMusclegroups] = useStateFromProp(currentExerciseMusclegroups);
 
   return (
     <View>
