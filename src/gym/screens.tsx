@@ -1,5 +1,5 @@
 import React from 'react';
-import { useStateFromProp } from '../hooks';
+import { useDerivedState } from '../hooks';
 import { useAllGyms, useGym, update, create, Gym } from './gyms';
 import { StyleSheet, ScrollView, View, Text, TouchableHighlight, Button, TextInput } from 'react-native';
 import { NavigationScreenProps } from 'react-navigation';
@@ -40,7 +40,7 @@ export const EditOrCreateGym = (props: NavigationScreenProps<{ gymId?: string }>
   const isCreate = !gymId;
   const gym = useGym(gymId);
 
-  const [name, setName] = useStateFromProp(gym.name);
+  const [name, setName] = useDerivedState(gym.name);
 
   return (
     <View>

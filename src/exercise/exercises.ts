@@ -17,17 +17,17 @@ export type ExerciseMuscleGroup = {
 };
 
 export const allMusclegroups = [
-  'biceps',
-  'triceps',
-  'delts',
-  'pecs',
-  'lats',
-  'upper back',
-  'lower back',
-  'abs',
-  'quads',
-  'hams',
-  'calves',
+  'Biceps',
+  'Triceps',
+  'Delts',
+  'Pecs',
+  'Lats',
+  'Upper back',
+  'Lower back',
+  'Abs',
+  'Quads',
+  'Hams',
+  'Calves',
 ];
 
 export function getAllExercises() {
@@ -38,7 +38,11 @@ export async function getExercise(exerciseId: string) {
   return (await select<Exercise>('SELECT * FROM exercises WHERE id = ?', [exerciseId]))[0];
 }
 
-export async function create(exercise: Omit<Exercise, 'id'>, musclegroups: string[], gymIds: string[]) {
+export async function create(
+  exercise: Omit<Exercise, 'id'>,
+  musclegroups: readonly string[],
+  gymIds: readonly string[],
+) {
   const exerciseId = await uuid.getRandomUUID();
   await executeSql('INSERT INTO exercises (id, name) VALUES(?, ?)', [exerciseId, exercise.name]);
   const ops: Promise<unknown>[] = [];
@@ -53,7 +57,11 @@ export async function create(exercise: Omit<Exercise, 'id'>, musclegroups: strin
   return exerciseId;
 }
 
-export async function update(exercise: Exercise, musclegroups: string[] | null = null, gymIds: string[] | null = null) {
+export async function update(
+  exercise: Exercise,
+  musclegroups: readonly string[] | null = null,
+  gymIds: readonly string[] | null = null,
+) {
   await executeSql('UPDATE exercises SET name = ? WHERE id = ?', [exercise.name, exercise.id]);
   triggerEventListeners({ exerciseId: exercise.id, type: 'update' });
   const ops: Promise<unknown>[] = [];
@@ -62,8 +70,11 @@ export async function update(exercise: Exercise, musclegroups: string[] | null =
     for (const musclegroup of musclegroups) {
       if (currentMusclegroups.indexOf(musclegroup) === -1) {
         ops.push(addExerciseMusclegroup(exercise.id, musclegroup));
-      } else {
-        ops.push(removeExerciseMusclegroup(exercise.id, musclegroup));
+      }
+    }
+    for (const currentMusclegroup of currentMusclegroups) {
+      if (musclegroups.indexOf(currentMusclegroup) === -1) {
+        ops.push(removeExerciseMusclegroup(exercise.id, currentMusclegroup));
       }
     }
   }
@@ -72,8 +83,11 @@ export async function update(exercise: Exercise, musclegroups: string[] | null =
     for (const gymId of gymIds) {
       if (currentGymIds.indexOf(gymId) === -1) {
         ops.push(addGymExercise(gymId, exercise.id));
-      } else {
-        ops.push(removeGymExercise(gymId, exercise.id));
+      }
+    }
+    for (const currentGymId of currentGymIds) {
+      if (gymIds.indexOf(currentGymId) === -1) {
+        ops.push(removeGymExercise(currentGymId, exercise.id));
       }
     }
   }
@@ -87,7 +101,7 @@ export async function remove(exerciseId: string) {
   triggerEventListeners({ exerciseId: exerciseId, type: 'remove' });
 }
 
-export async function getExerciseMusclegroups(exerciseId: string) {
+export async function getExerciseMusclegroups(exerciseId: string): Promise<readonly string[]> {
   return (await select<ExerciseMuscleGroup>('SELECT * FROM exercises_musclegroups WHERE exercise_id = ?', [
     exerciseId,
   ])).map(em => em.musclegroup);
@@ -134,7 +148,7 @@ function triggerEventListeners(event: ExerciseEvent) {
 }
 
 export function useAllExercises() {
-  const [allExercises, setAllExercises] = React.useState<Exercise[]>([]);
+  const [allExercises, setAllExercises] = React.useState<readonly Exercise[]>([]);
   React.useEffect(() => {
     (async () => {
       setAllExercises(await getAllExercises());
@@ -168,8 +182,8 @@ export function useExercise(exerciseId: string | undefined) {
   return exercise;
 }
 
-export function useExerciseMusclegroups(exerciseId: string | undefined) {
-  const [exerciseMusclegroups, setExerciseMusclegroups] = React.useState<string[]>([]);
+export function useExerciseMusclegroups(exerciseId: string | undefined): readonly string[] {
+  const [exerciseMusclegroups, setExerciseMusclegroups] = React.useState<readonly string[]>([]);
   React.useEffect(() => {
     if (!exerciseId) {
       return;

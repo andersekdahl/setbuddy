@@ -22,14 +22,18 @@ export async function executeSql(sql: string, params: any[]): Promise<SQLite.Res
   });
 }
 
-export async function select<TResult>(sql: string, params: any[]): Promise<TResult[]> {
+export async function select<TResult>(
+  sql: string,
+  params: any[],
+  mapper = (res: readonly TResult[]) => res,
+): Promise<readonly TResult[]> {
   const result = await executeSql(sql, params);
 
   const rows: TResult[] = [];
   for (let i = 0; i < result.rows.length; i++) {
     rows.push(result.rows.item(i));
   }
-  return rows;
+  return mapper(rows);
 }
 
 type MigrationFunction = (db: SQLite.SQLiteDatabase) => Promise<unknown>;

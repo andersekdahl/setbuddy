@@ -20,3 +20,49 @@ export function getNavParamOrThrow<TParams, TKey extends keyof TParams>(
   }
   return paramValue;
 }
+
+export function isEqual(x: any, y: any) {
+  if (x === y) {
+    return true;
+  }
+  if (typeof x !== typeof y) {
+    return false;
+  }
+
+  if (Array.isArray(x) && Array.isArray(y)) {
+    if (x.length !== y.length) {
+      return false;
+    }
+    for (let i = 0; i < x.length; i++) {
+      if (!isEqual(x[i], y[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  if (typeof x === 'object' && typeof y === 'object') {
+    if (x === null || y === null) {
+      // We can safely return false. Both can't be null since we did a === check at the top.
+      return false;
+    }
+    const xKeys = Object.keys(x);
+    const yKeys = Object.keys(y);
+    if (xKeys.length !== yKeys.length || !isEqual(xKeys, yKeys)) {
+      return false;
+    }
+    for (let i = 0; i < xKeys.length; i++) {
+      if (yKeys.indexOf(xKeys[i]) === -1) {
+        // Since we already know that xKeys.length and yKeys.length are the same we
+        // don't have to also check if yKeys contains keys that xKeys doesn't
+        return false;
+      }
+      if (!isEqual(x[xKeys[i]], y[xKeys[i]])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  return false;
+}

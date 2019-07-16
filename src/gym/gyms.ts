@@ -72,7 +72,7 @@ function triggerEventListeners(event: GymEvent) {
 }
 
 export function useAllGyms() {
-  const [allGyms, setAllGyms] = React.useState<Gym[]>([]);
+  const [allGyms, setAllGyms] = React.useState<readonly Gym[]>([]);
   React.useEffect(() => {
     (async () => {
       setAllGyms(await getAllGyms());
@@ -106,7 +106,7 @@ export function useGym(gymId: string | undefined) {
 }
 
 export function useGymsByExercise(exerciseId: string | undefined) {
-  const [gyms, setGyms] = React.useState<Gym[]>([]);
+  const [gyms, setGyms] = React.useState<readonly Gym[]>([]);
   React.useEffect(() => {
     if (!exerciseId) {
       return;
