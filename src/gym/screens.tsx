@@ -1,19 +1,19 @@
 import React from 'react';
 import { useDerivedState } from '../hooks';
 import { useAllGyms, useGym, update, create, Gym } from './gyms';
-import { StyleSheet, ScrollView, View, Text, TouchableHighlight, Button, TextInput } from 'react-native';
-import { NavigationScreenProps } from 'react-navigation';
-import { getNavParam, getNavParamOrThrow } from '../utils';
+import { ScrollView, View, Text, TouchableHighlight, Button, TextInput } from 'react-native';
+import { NavigationScreenProps, NavigationScreenComponent, NavigationStackScreenOptions } from 'react-navigation';
+import { getNavParam, getNavParamOrThrow, Screen } from '../utils';
 
-export const AllGymsScreen = (props: NavigationScreenProps<{}>) => {
+export const AllGymsScreen: Screen = props => {
   const allGyms = useAllGyms();
 
   return (
     <ScrollView>
-      <View style={styles.gyms}>
-        <Text style={styles.gymsHeading}>Gyms</Text>
+      <View>
+        <Text>Gyms</Text>
         {allGyms.map(gym => (
-          <View key={gym.id} style={styles.gymContainer}>
+          <View key={gym.id}>
             <TouchableHighlight onPress={() => props.navigation.navigate('Gym', { gymId: gym.id })}>
               <Text>{gym.name}</Text>
             </TouchableHighlight>
@@ -25,7 +25,9 @@ export const AllGymsScreen = (props: NavigationScreenProps<{}>) => {
   );
 };
 
-export const GymScreen = (props: NavigationScreenProps<{ gymId: string }>) => {
+type GymScreenParams = { gymId: string };
+
+export const GymScreen: Screen<GymScreenParams> = props => {
   const gym = useGym(getNavParamOrThrow(props, 'gymId'));
 
   return (
@@ -34,8 +36,21 @@ export const GymScreen = (props: NavigationScreenProps<{ gymId: string }>) => {
     </View>
   );
 };
+GymScreen.navigationOptions = props => ({
+  title: 'Gym',
+  headerRight: (
+    <Button
+      onPress={() =>
+        props.navigation.navigate('EditGym', {
+          gymId: getNavParam(props as NavigationScreenProps<GymScreenParams>, 'gymId'),
+        })
+      }
+      title="Edit"
+    />
+  ),
+});
 
-export const EditOrCreateGym = (props: NavigationScreenProps<{ gymId?: string }>) => {
+export const EditOrCreateGym: Screen<{ gymId?: string }> = props => {
   const gymId = getNavParam(props, 'gymId');
   const isCreate = !gymId;
   const gym = useGym(gymId);
@@ -52,21 +67,15 @@ export const EditOrCreateGym = (props: NavigationScreenProps<{ gymId?: string }>
       <Button
         title="Save"
         onPress={async () => {
-          let gymId: string;
           if (isCreate) {
-            gymId = await create({ name: name });
+            const gymId = await create({ name: name });
+            props.navigation.navigate('AllGyms');
           } else {
             await update({ name: name, id: gymId! });
+            props.navigation.goBack();
           }
-          props.navigation.navigate('Home');
         }}
       />
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  gyms: {},
-  gymsHeading: {},
-  gymContainer: {},
-});

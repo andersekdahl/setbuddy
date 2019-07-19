@@ -6,6 +6,9 @@ export const HomeScreen = (props: NavigationScreenProps) => {
   return (
     <View>
       <View>
+        <Button title="Manage routines" onPress={() => props.navigation.navigate('AllRoutines')} />
+      </View>
+      <View>
         <Button title="Manage gyms" onPress={() => props.navigation.navigate('AllGyms')} />
       </View>
       <View>

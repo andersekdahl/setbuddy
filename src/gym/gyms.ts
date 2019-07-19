@@ -1,5 +1,6 @@
 import React from 'react';
 import { select, executeSql, registerMigration } from '../db';
+import { onDataChange as onGymExerciseDataChange } from './gyms-exercises';
 import uuid from 'react-native-uuid-generator';
 
 export type NewGym = {
@@ -25,7 +26,7 @@ export async function getGym(gymId: string) {
   return (await select<Gym>('SELECT * FROM gyms WHERE id = ?', [gymId]))[0];
 }
 
-export async function create(gym: Omit<Gym, 'id'>) {
+export async function create(gym: NewGym) {
   const gymId = await uuid.getRandomUUID();
   await executeSql('INSERT INTO gyms (id, name) VALUES(?, ?)', [gymId, gym.name]);
   triggerEventListeners({ gymId: gymId, type: 'create' });
@@ -42,17 +43,7 @@ export async function remove(gymId: string) {
   triggerEventListeners({ gymId: gymId, type: 'remove' });
 }
 
-export async function addGymExercise(gymId: string, exerciseId: string) {
-  await executeSql('INSERT INTO gyms_exercises (gym_id, exercise_id) VALUES(?, ?)', [gymId, exerciseId]);
-  triggerEventListeners({ gymId: gymId, type: 'create', relation: 'exercise', exerciseId: exerciseId });
-}
-
-export async function removeGymExercise(gymId: string, exerciseId: string) {
-  await executeSql('DELETE FROM gyms_exercises WHERE gym_id = ? AND exercise_id = ?', [gymId, exerciseId]);
-  triggerEventListeners({ gymId: gymId, type: 'remove', relation: 'exercise', exerciseId: exerciseId });
-}
-
-type GymEvent = { gymId: string; exerciseId?: string; relation?: 'exercise'; type: 'create' | 'update' | 'remove' };
+type GymEvent = { gymId: string; type: 'create' | 'update' | 'remove' };
 type EventListener = (event: GymEvent) => unknown;
 const eventListeners: EventListener[] = [];
 export function onDataChange(listener: EventListener) {
@@ -116,7 +107,7 @@ export function useGymsByExercise(exerciseId: string | undefined) {
       setGyms(await getGymsByExercise(exerciseId));
     })();
 
-    return onDataChange(async e => {
+    return onGymExerciseDataChange(async e => {
       if (e.exerciseId === exerciseId) {
         setGyms(await getGymsByExercise(exerciseId));
       }
@@ -131,6 +122,4 @@ registerMigration(201907300803, 'create-gyms', async db => {
 
   const gymId = await uuid.getRandomUUID();
   await db.executeSql('INSERT INTO gyms (id, name) VALUES(?, ?)', [gymId, 'My local gym']);
-
-  await db.executeSql('CREATE TABLE gyms_exercises (gym_id TEXT, exercise_id TEXT, PRIMARY KEY(gym_id, exercise_id))');
 });

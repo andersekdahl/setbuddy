@@ -8,6 +8,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@types/jest": "^24.0.15",
     "@types/react-native-sqlite-storage": "^3.3.1",
     "@types/react-native-uuid-generator": "^4.0.0",
     "react": "16.8.6",

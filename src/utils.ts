@@ -1,4 +1,6 @@
-import { NavigationScreenProps } from 'react-navigation';
+import { NavigationScreenProps, NavigationScreenComponent, NavigationStackScreenOptions } from 'react-navigation';
+
+export type Screen<TParams = {}> = NavigationScreenComponent<TParams, NavigationStackScreenOptions>;
 
 export function getNavParam<TParams, TKey extends keyof TParams>(
   props: NavigationScreenProps<TParams>,
@@ -19,6 +21,17 @@ export function getNavParamOrThrow<TParams, TKey extends keyof TParams>(
     );
   }
   return paramValue;
+}
+
+export function addOrRemove<T>(item: T, arr: readonly T[]) {
+  const writable = arr.slice();
+  const index = arr.indexOf(item);
+  if (index === -1) {
+    writable.push(item);
+  } else {
+    writable.splice(index, 1);
+  }
+  return writable;
 }
 
 export function isEqual(x: any, y: any) {
@@ -48,7 +61,7 @@ export function isEqual(x: any, y: any) {
     }
     const xKeys = Object.keys(x);
     const yKeys = Object.keys(y);
-    if (xKeys.length !== yKeys.length || !isEqual(xKeys, yKeys)) {
+    if (xKeys.length !== yKeys.length) {
       return false;
     }
     for (let i = 0; i < xKeys.length; i++) {

@@ -1,22 +1,30 @@
 import React from 'react';
 import { useDerivedState } from '../hooks';
 import { useAllExercises, useExercise, update, create, allMusclegroups, useExerciseMusclegroups } from './exercises';
-import { getNavParam, getNavParamOrThrow } from '../utils';
+import { getNavParam, getNavParamOrThrow, addOrRemove, Screen } from '../utils';
 import { useAllGyms, useGymsByExercise } from '../gym/gyms';
-import { StyleSheet, ScrollView, View, Text, TouchableHighlight, Button, TextInput, CheckBox } from 'react-native';
-import { NavigationScreenProps, NavigationScreenComponent, NavigationStackScreenOptions } from 'react-navigation';
+import {
+  StyleSheet,
+  Modal,
+  ScrollView,
+  View,
+  Text,
+  TouchableHighlight,
+  Button,
+  TextInput,
+  CheckBox,
+} from 'react-native';
+import { NavigationScreenProps } from 'react-navigation';
 
-export const AllExercisesScreen: NavigationScreenComponent<{}, NavigationStackScreenOptions> = (
-  props: NavigationScreenProps,
-) => {
+export const AllExercisesScreen: Screen<{}> = props => {
   const allExercises = useAllExercises();
 
   return (
     <ScrollView>
-      <View style={styles.exercises}>
-        <Text style={styles.exercisesHeading}>Exercises</Text>
+      <View>
+        <Text>Exercises</Text>
         {allExercises.map(exercise => (
-          <View key={exercise.id} style={styles.exerciseContainer}>
+          <View key={exercise.id}>
             <TouchableHighlight onPress={() => props.navigation.navigate('Exercise', { exerciseId: exercise.id })}>
               <Text>{exercise.name}</Text>
             </TouchableHighlight>
@@ -33,9 +41,7 @@ AllExercisesScreen.navigationOptions = {
 
 type ExerciseScreenParams = { exerciseId: string };
 
-export const ExerciseScreen: NavigationScreenComponent<ExerciseScreenParams, NavigationStackScreenOptions> = (
-  props: NavigationScreenProps,
-) => {
+export const ExerciseScreen: Screen<ExerciseScreenParams> = props => {
   const exerciseId = getNavParamOrThrow(props, 'exerciseId');
   const exercise = useExercise(exerciseId);
   const exerciseGyms = useGymsByExercise(exerciseId);
@@ -77,9 +83,7 @@ ExerciseScreen.navigationOptions = props => ({
 
 type EditOrCreateExerciseScreenParams = { exerciseId?: string };
 
-export const EditOrCreateExercise: NavigationScreenComponent = (
-  props: NavigationScreenProps<EditOrCreateExerciseScreenParams>,
-) => {
+export const EditOrCreateExercise: Screen<EditOrCreateExerciseScreenParams> = props => {
   const exerciseId = getNavParam(props, 'exerciseId');
   const isCreate = !exerciseId;
   const exercise = useExercise(exerciseId);
@@ -89,7 +93,6 @@ export const EditOrCreateExercise: NavigationScreenComponent = (
   const allGyms = useAllGyms();
   const exerciseGyms = useGymsByExercise(exerciseId);
   const [exerciseGymIds, setExerciseGymIds] = useDerivedState(exerciseGyms.map(wg => wg.id));
-  console.log('exerciseGymIds', exerciseGymIds);
   const currentExerciseMusclegroups = useExerciseMusclegroups(exerciseId);
   const [exerciseMusclegroups, setExerciseMusclegroups] = useDerivedState(currentExerciseMusclegroups);
 
@@ -162,8 +165,35 @@ export const EditOrCreateExercise: NavigationScreenComponent = (
   );
 };
 
-const styles = StyleSheet.create({
-  exercises: {},
-  exercisesHeading: {},
-  exerciseContainer: {},
-});
+export type SelectExercisesModalProps = {
+  onSelect: (selectedExercises: readonly string[]) => unknown;
+  visible: boolean;
+};
+
+export const SelectExercisesModal = (props: SelectExercisesModalProps) => {
+  const allExercises = useAllExercises();
+  const [selectedExercises, setSelectedExercises] = React.useState<readonly string[]>([]);
+
+  return (
+    <Modal visible={props.visible}>
+      <ScrollView>
+        <View>
+          <Text>Exercises</Text>
+          {allExercises.map(exercise => (
+            <View key={exercise.id}>
+              <TouchableHighlight
+                style={{ backgroundColor: selectedExercises.indexOf(exercise.id) === -1 ? '' : '#ccc' }}
+                onPress={() => {
+                  setSelectedExercises(addOrRemove(exercise.id, selectedExercises));
+                }}
+              >
+                <Text>{exercise.name}</Text>
+              </TouchableHighlight>
+            </View>
+          ))}
+        </View>
+        <Button title="Done" onPress={() => props.onSelect(selectedExercises)} />
+      </ScrollView>
+    </Modal>
+  );
+};

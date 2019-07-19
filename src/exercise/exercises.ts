@@ -1,6 +1,13 @@
 import React from 'react';
 import { select, executeSql, registerMigration } from '../db';
-import { addGymExercise, removeGymExercise, getGymsByExercise } from '../gym/gyms';
+import { getGymsByExercise } from '../gym/gyms';
+import { addGymExercise, removeGymExercise } from '../gym/gyms-exercises';
+import { onDataChange as onRoutineExerciseDataChange } from '../routine/routine-exercises';
+import {
+  addExerciseMusclegroup,
+  removeExerciseMusclegroup,
+  onDataChange as onExerciseMusclegroupDataChange,
+} from './exercise-musclegroup';
 import uuid from 'react-native-uuid-generator';
 
 export type NewExercise = {
@@ -36,6 +43,13 @@ export function getAllExercises() {
 
 export async function getExercise(exerciseId: string) {
   return (await select<Exercise>('SELECT * FROM exercises WHERE id = ?', [exerciseId]))[0];
+}
+
+export async function getExerciesesByRoutine(routineId: string) {
+  return await select<Exercise>(
+    'SELECT e.* FROM exercises AS e INNER JOIN routines_exercises AS re ON e.id = re.exercise_id WHERE re.routine_id = ?',
+    [routineId],
+  );
 }
 
 export async function create(
@@ -107,26 +121,8 @@ export async function getExerciseMusclegroups(exerciseId: string): Promise<reado
   ])).map(em => em.musclegroup);
 }
 
-export async function addExerciseMusclegroup(exerciseId: string, musclegroup: string) {
-  await executeSql('INSERT INTO exercises_musclegroups (exercise_id, musclegroup) VALUES(?, ?)', [
-    exerciseId,
-    musclegroup,
-  ]);
-  triggerEventListeners({ type: 'create', relation: 'musclegroup', exerciseId: exerciseId, musclegroup: musclegroup });
-}
-
-export async function removeExerciseMusclegroup(exerciseId: string, musclegroup: string) {
-  await executeSql('DELETE FROM exercises_musclegroups WHERE exercise_id = ? AND musclegroup = ?', [
-    exerciseId,
-    musclegroup,
-  ]);
-  triggerEventListeners({ type: 'remove', relation: 'musclegroup', exerciseId: exerciseId, musclegroup: musclegroup });
-}
-
 type ExerciseEvent = {
   exerciseId: string;
-  relation?: 'musclegroup';
-  musclegroup?: string;
   type: 'create' | 'update' | 'remove';
 };
 type EventListener = (event: ExerciseEvent) => unknown;
@@ -182,6 +178,27 @@ export function useExercise(exerciseId: string | undefined) {
   return exercise;
 }
 
+export function useExerciesesByRoutine(routineId: string | undefined) {
+  const [exercises, setExercies] = React.useState<readonly Exercise[]>([]);
+  React.useEffect(() => {
+    if (!routineId) {
+      return;
+    }
+
+    (async () => {
+      setExercies(await getExerciesesByRoutine(routineId));
+    })();
+
+    return onRoutineExerciseDataChange(async e => {
+      if (e.routineId === routineId) {
+        setExercies(await getExerciesesByRoutine(routineId));
+      }
+    });
+  }, []);
+
+  return exercises;
+}
+
 export function useExerciseMusclegroups(exerciseId: string | undefined): readonly string[] {
   const [exerciseMusclegroups, setExerciseMusclegroups] = React.useState<readonly string[]>([]);
   React.useEffect(() => {
@@ -193,8 +210,8 @@ export function useExerciseMusclegroups(exerciseId: string | undefined): readonl
       setExerciseMusclegroups(await getExerciseMusclegroups(exerciseId));
     })();
 
-    return onDataChange(async e => {
-      if (e.exerciseId === exerciseId && e.relation === 'musclegroup') {
+    return onExerciseMusclegroupDataChange(async e => {
+      if (e.exerciseId === exerciseId) {
         setExerciseMusclegroups(await getExerciseMusclegroups(exerciseId));
       }
     });
@@ -204,8 +221,4 @@ export function useExerciseMusclegroups(exerciseId: string | undefined): readonl
 
 registerMigration(201907300803, 'create-exercises', async db => {
   await db.executeSql('CREATE TABLE exercises (id TEXT PRIMARY KEY, name TEXT NOT NULL)');
-
-  await db.executeSql(
-    'CREATE TABLE exercises_musclegroups (exercise_id TEXT NOT NULL, musclegroup TEXT NOT NULL, PRIMARY KEY(exercise_id, musclegroup))',
-  );
 });
