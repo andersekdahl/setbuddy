@@ -1,7 +1,7 @@
 import React from 'react';
 import { select, executeSql, registerMigration } from '../db';
 import uuid from 'react-native-uuid-generator';
-import { Exercise, getExercisesByRoutine } from '../exercise/exercises';
+import { getExercisesByRoutine } from '../exercise/exercises';
 import { addRoutineExercise, removeRoutineExercise } from './routine-exercises';
 
 export type NewRoutine = {

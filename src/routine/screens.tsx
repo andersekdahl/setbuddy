@@ -6,6 +6,7 @@ import { SelectExercisesModal } from '../exercise/screens';
 import { StyleSheet, ScrollView, View, Text, TouchableHighlight, Button, TextInput } from 'react-native';
 import { NavigationScreenProps } from 'react-navigation';
 import { getNavParam, getNavParamOrThrow, Screen } from '../utils';
+import Icon from 'react-native-vector-icons/FontAwesome5';
 
 export const AllRoutinesScreen: Screen = props => {
   const allRoutines = useAllRoutines();
@@ -74,6 +75,7 @@ export const EditOrCreateRoutine: Screen<{ routineId?: string }> = props => {
         {selectedExercises.map(e => (
           <View key={e.id}>
             <Text>{e.name}</Text>
+            <Icon name="trash-alt" />
           </View>
         ))}
         <Button title="Add exercies" onPress={() => setSelectExerciesVisible(true)} />
