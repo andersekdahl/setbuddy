@@ -1,6 +1,8 @@
 import React from 'react';
 import { select, executeSql, registerMigration } from '../db';
 import uuid from 'react-native-uuid-generator';
+import { Exercise, getExercisesByRoutine } from '../exercise/exercises';
+import { addRoutineExercise, removeRoutineExercise } from './routine-exercises';
 
 export type NewRoutine = {
   name: string;
@@ -18,16 +20,41 @@ export async function getRoutine(routineId: string) {
   return (await select<Routine>('SELECT * FROM routines WHERE id = ?', [routineId]))[0];
 }
 
-export async function create(routine: NewRoutine) {
+export async function create(routine: NewRoutine, exerciseIds: readonly string[]) {
   const routineId = await uuid.getRandomUUID();
   await executeSql('INSERT INTO routines (id, name) VALUES(?, ?)', [routineId, routine.name]);
   triggerEventListeners({ routineId: routineId, type: 'create' });
+  const ops: Promise<unknown>[] = [];
+  for (const exerciseId of exerciseIds) {
+    ops.push(addRoutineExercise(routineId, exerciseId));
+  }
+  if (ops.length) {
+    await Promise.all(ops);
+  }
   return routineId;
 }
 
-export async function update(routine: Routine) {
+export async function update(routine: Routine, exerciseIds: readonly string[] | undefined = undefined) {
   await executeSql('UPDATE routines SET name = ? WHERE id = ?', [routine.name, routine.id]);
   triggerEventListeners({ routineId: routine.id, type: 'update' });
+
+  if (exerciseIds) {
+    const currentExerciseIds = (await getExercisesByRoutine(routine.id)).map(e => e.id);
+    const ops: Promise<unknown>[] = [];
+    for (const exerciseId of exerciseIds) {
+      if (currentExerciseIds.indexOf(exerciseId) === -1) {
+        ops.push(addRoutineExercise(routine.id, exerciseId));
+      }
+    }
+    for (const currentExerciseId of currentExerciseIds) {
+      if (exerciseIds.indexOf(currentExerciseId) === -1) {
+        ops.push(removeRoutineExercise(routine.id, currentExerciseId));
+      }
+    }
+    if (ops.length) {
+      await Promise.all(ops);
+    }
+  }
 }
 
 export async function remove(routineId: string) {

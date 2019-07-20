@@ -42,8 +42,6 @@ const migrations: { [name: string]: MigrationFunction } = {};
 async function migrateIfNeeded(db: SQLite.SQLiteDatabase) {
   await executeSql('CREATE TABLE IF NOT EXISTS migrations (name TEXT PRIMARY KEY, executed_at INTEGER)', []);
   const previouslyExecutedMigrations = (await select<MigrationRow>('SELECT * FROM migrations', [])).map(m => m.name);
-  console.log('previouslyExecutedMigrations', previouslyExecutedMigrations);
-  console.log('Object.keys(migrations)', Object.keys(migrations));
   for (const migrationName of Object.keys(migrations)) {
     if (previouslyExecutedMigrations.indexOf(migrationName) === -1) {
       await migrations[migrationName](db);

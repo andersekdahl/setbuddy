@@ -1,7 +1,7 @@
 import React from 'react';
 import { useDerivedState } from '../hooks';
 import { useAllRoutines, useRoutine, update, create, Routine } from './routines';
-import { useExerciesesByRoutine } from '../exercise/exercises';
+import { useExercisesByRoutine, Exercise } from '../exercise/exercises';
 import { SelectExercisesModal } from '../exercise/screens';
 import { StyleSheet, ScrollView, View, Text, TouchableHighlight, Button, TextInput } from 'react-native';
 import { NavigationScreenProps } from 'react-navigation';
@@ -27,7 +27,9 @@ export const AllRoutinesScreen: Screen = props => {
   );
 };
 
-export const RoutineScreen: Screen<{ routineId: string }> = props => {
+type RoutineScreenParams = { routineId: string };
+
+export const RoutineScreen: Screen<RoutineScreenParams> = props => {
   const routine = useRoutine(getNavParamOrThrow(props, 'routineId'));
 
   return (
@@ -36,14 +38,27 @@ export const RoutineScreen: Screen<{ routineId: string }> = props => {
     </View>
   );
 };
+RoutineScreen.navigationOptions = props => ({
+  title: 'Gym',
+  headerRight: (
+    <Button
+      onPress={() =>
+        props.navigation.navigate('EditRoutine', {
+          routineId: getNavParam(props as NavigationScreenProps<RoutineScreenParams>, 'routineId'),
+        })
+      }
+      title="Edit"
+    />
+  ),
+});
 
 export const EditOrCreateRoutine: Screen<{ routineId?: string }> = props => {
   const routineId = getNavParam(props, 'routineId');
   const isCreate = !routineId;
   const routine = useRoutine(routineId);
-  const routineExercieses = useExerciesesByRoutine(routineId);
+  const routineExercieses = useExercisesByRoutine(routineId);
   const [selectExerciesVisible, setSelectExerciesVisible] = React.useState(false);
-  const [selectedExercises, setSelectedExercises] = React.useState<readonly string[]>([]);
+  const [selectedExercises, setSelectedExercises] = useDerivedState(routineExercieses);
 
   const [name, setName] = useDerivedState(routine.name);
 
@@ -56,24 +71,31 @@ export const EditOrCreateRoutine: Screen<{ routineId?: string }> = props => {
       </View>
       <View>
         <Text>Exercies</Text>
-        {routineExercieses.map(e => (
+        {selectedExercises.map(e => (
           <View key={e.id}>
             <Text>{e.name}</Text>
           </View>
         ))}
         <Button title="Add exercies" onPress={() => setSelectExerciesVisible(true)} />
       </View>
-      <SelectExercisesModal visible={selectExerciesVisible} onSelect={s => setSelectedExercises(s)} />
+      <SelectExercisesModal
+        selectedExercises={selectedExercises}
+        visible={selectExerciesVisible}
+        onSelect={s => {
+          setSelectedExercises(s);
+          setSelectExerciesVisible(false);
+        }}
+      />
       <Button
         title="Save"
         onPress={async () => {
-          let routineId: string;
           if (isCreate) {
-            routineId = await create({ name: name });
+            const routineId = await create({ name: name }, selectedExercises.map(e => e.id));
+            props.navigation.navigate('AllRoutines');
           } else {
-            await update({ name: name, id: routineId! });
+            await update({ name: name, id: routineId! }, selectedExercises.map(e => e.id));
+            props.navigation.goBack();
           }
-          props.navigation.navigate('Home');
         }}
       />
     </View>

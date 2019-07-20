@@ -23,9 +23,9 @@ export function getNavParamOrThrow<TParams, TKey extends keyof TParams>(
   return paramValue;
 }
 
-export function addOrRemove<T>(item: T, arr: readonly T[]) {
+export function addOrRemove<T>(item: T, arr: readonly T[], comparer = (t1: T, t2: T) => t1 === t2) {
   const writable = arr.slice();
-  const index = arr.indexOf(item);
+  const index = arr.findIndex(t => comparer(item, t));
   if (index === -1) {
     writable.push(item);
   } else {

@@ -45,7 +45,7 @@ export async function getExercise(exerciseId: string) {
   return (await select<Exercise>('SELECT * FROM exercises WHERE id = ?', [exerciseId]))[0];
 }
 
-export async function getExerciesesByRoutine(routineId: string) {
+export async function getExercisesByRoutine(routineId: string) {
   return await select<Exercise>(
     'SELECT e.* FROM exercises AS e INNER JOIN routines_exercises AS re ON e.id = re.exercise_id WHERE re.routine_id = ?',
     [routineId],
@@ -73,8 +73,8 @@ export async function create(
 
 export async function update(
   exercise: Exercise,
-  musclegroups: readonly string[] | null = null,
-  gymIds: readonly string[] | null = null,
+  musclegroups: readonly string[] | undefined = undefined,
+  gymIds: readonly string[] | undefined = undefined,
 ) {
   await executeSql('UPDATE exercises SET name = ? WHERE id = ?', [exercise.name, exercise.id]);
   triggerEventListeners({ exerciseId: exercise.id, type: 'update' });
@@ -178,7 +178,7 @@ export function useExercise(exerciseId: string | undefined) {
   return exercise;
 }
 
-export function useExerciesesByRoutine(routineId: string | undefined) {
+export function useExercisesByRoutine(routineId: string | undefined) {
   const [exercises, setExercies] = React.useState<readonly Exercise[]>([]);
   React.useEffect(() => {
     if (!routineId) {
@@ -186,12 +186,12 @@ export function useExerciesesByRoutine(routineId: string | undefined) {
     }
 
     (async () => {
-      setExercies(await getExerciesesByRoutine(routineId));
+      setExercies(await getExercisesByRoutine(routineId));
     })();
 
     return onRoutineExerciseDataChange(async e => {
       if (e.routineId === routineId) {
-        setExercies(await getExerciesesByRoutine(routineId));
+        setExercies(await getExercisesByRoutine(routineId));
       }
     });
   }, []);

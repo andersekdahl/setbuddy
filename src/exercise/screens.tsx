@@ -1,6 +1,14 @@
 import React from 'react';
 import { useDerivedState } from '../hooks';
-import { useAllExercises, useExercise, update, create, allMusclegroups, useExerciseMusclegroups } from './exercises';
+import {
+  useAllExercises,
+  useExercise,
+  update,
+  create,
+  allMusclegroups,
+  useExerciseMusclegroups,
+  Exercise,
+} from './exercises';
 import { getNavParam, getNavParamOrThrow, addOrRemove, Screen } from '../utils';
 import { useAllGyms, useGymsByExercise } from '../gym/gyms';
 import {
@@ -155,10 +163,11 @@ export const EditOrCreateExercise: Screen<EditOrCreateExerciseScreenParams> = pr
         onPress={async () => {
           if (isCreate) {
             const exerciseId = await create({ name: name }, exerciseMusclegroups, exerciseGymIds);
+            props.navigation.navigate('AllExercies');
           } else {
             await update({ name: name, id: exerciseId! }, exerciseMusclegroups, exerciseGymIds);
+            props.navigation.goBack();
           }
-          props.navigation.navigate('Home');
         }}
       />
     </View>
@@ -166,13 +175,19 @@ export const EditOrCreateExercise: Screen<EditOrCreateExerciseScreenParams> = pr
 };
 
 export type SelectExercisesModalProps = {
-  onSelect: (selectedExercises: readonly string[]) => unknown;
+  onSelect: (selectedExercises: readonly Exercise[]) => unknown;
   visible: boolean;
+  selectedExercises: ReadonlyArray<string | Exercise>;
 };
 
 export const SelectExercisesModal = (props: SelectExercisesModalProps) => {
+  const selectedExercisesIdsFromProps = props.selectedExercises.map(exerciseOrId =>
+    typeof exerciseOrId === 'string' ? exerciseOrId : exerciseOrId.id,
+  );
   const allExercises = useAllExercises();
-  const [selectedExercises, setSelectedExercises] = React.useState<readonly string[]>([]);
+  const [selectedExercises, setSelectedExercises] = useDerivedState(
+    allExercises.filter(e => selectedExercisesIdsFromProps.indexOf(e.id) !== -1),
+  );
 
   return (
     <Modal visible={props.visible}>
@@ -182,9 +197,9 @@ export const SelectExercisesModal = (props: SelectExercisesModalProps) => {
           {allExercises.map(exercise => (
             <View key={exercise.id}>
               <TouchableHighlight
-                style={{ backgroundColor: selectedExercises.indexOf(exercise.id) === -1 ? '' : '#ccc' }}
+                style={{ backgroundColor: !selectedExercises.find(e => e.id === exercise.id) ? '#fff' : '#ccc' }}
                 onPress={() => {
-                  setSelectedExercises(addOrRemove(exercise.id, selectedExercises));
+                  setSelectedExercises(addOrRemove(exercise, selectedExercises, (e1, e2) => e1.id === e2.id));
                 }}
               >
                 <Text>{exercise.name}</Text>
