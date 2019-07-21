@@ -163,7 +163,7 @@ export const EditOrCreateExercise: Screen<EditOrCreateExerciseScreenParams> = pr
         onPress={async () => {
           if (isCreate) {
             const exerciseId = await create({ name: name }, exerciseMusclegroups, exerciseGymIds);
-            props.navigation.navigate('AllExercies');
+            props.navigation.navigate('AllExercises');
           } else {
             await update({ name: name, id: exerciseId! }, exerciseMusclegroups, exerciseGymIds);
             props.navigation.goBack();

@@ -1,12 +1,20 @@
 import React from 'react';
 import { executeSql, registerMigration } from '../db';
 
-export async function addRoutineExercise(routineId: string, exerciseId: string) {
-  await executeSql('UPDATE routines_exercises SET sort_order = sort_order + 1 WHERE routine_id = ?', [routineId]);
+export async function setRoutineExercise(routineId: string, exerciseId: string, sortOrder: number) {
+  await executeSql('UPDATE routines_exercises SET sort_order = ? WHERE routine_id = ? AND exercise_id = ?', [
+    sortOrder,
+    routineId,
+    exerciseId,
+  ]);
+  triggerEventListeners({ routineId: routineId, type: 'create', exerciseId: exerciseId });
+}
+
+export async function addRoutineExercise(routineId: string, exerciseId: string, sortOrder: number) {
   await executeSql('INSERT INTO routines_exercises (routine_id, exercise_id, sort_order) VALUES(?, ?, ?)', [
     routineId,
     exerciseId,
-    0,
+    sortOrder,
   ]);
   triggerEventListeners({ routineId: routineId, type: 'create', exerciseId: exerciseId });
 }

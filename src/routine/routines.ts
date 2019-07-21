@@ -2,7 +2,7 @@ import React from 'react';
 import { select, executeSql, registerMigration } from '../db';
 import uuid from 'react-native-uuid-generator';
 import { getExercisesByRoutine } from '../exercise/exercises';
-import { addRoutineExercise, removeRoutineExercise } from './routine-exercises';
+import { addRoutineExercise, removeRoutineExercise, setRoutineExercise } from './routine-exercises';
 
 export type NewRoutine = {
   name: string;
@@ -25,8 +25,9 @@ export async function create(routine: NewRoutine, exerciseIds: readonly string[]
   await executeSql('INSERT INTO routines (id, name) VALUES(?, ?)', [routineId, routine.name]);
   triggerEventListeners({ routineId: routineId, type: 'create' });
   const ops: Promise<unknown>[] = [];
-  for (const exerciseId of exerciseIds) {
-    ops.push(addRoutineExercise(routineId, exerciseId));
+  for (let i = 0; i < exerciseIds.length; i++) {
+    const exerciseId = exerciseIds[i];
+    ops.push(addRoutineExercise(routineId, exerciseId, i));
   }
   if (ops.length) {
     await Promise.all(ops);
@@ -41,9 +42,13 @@ export async function update(routine: Routine, exerciseIds: readonly string[] | 
   if (exerciseIds) {
     const currentExerciseIds = (await getExercisesByRoutine(routine.id)).map(e => e.id);
     const ops: Promise<unknown>[] = [];
-    for (const exerciseId of exerciseIds) {
-      if (currentExerciseIds.indexOf(exerciseId) === -1) {
-        ops.push(addRoutineExercise(routine.id, exerciseId));
+    for (let i = 0; i < exerciseIds.length; i++) {
+      const exerciseId = exerciseIds[i];
+      const currentIndex = currentExerciseIds.indexOf(exerciseId);
+      if (currentIndex === -1) {
+        ops.push(addRoutineExercise(routine.id, exerciseId, i));
+      } else if (i !== currentIndex) {
+        ops.push(setRoutineExercise(routine.id, exerciseId, i));
       }
     }
     for (const currentExerciseId of currentExerciseIds) {

@@ -47,7 +47,7 @@ export async function getExercise(exerciseId: string) {
 
 export async function getExercisesByRoutine(routineId: string) {
   return await select<Exercise>(
-    'SELECT e.* FROM exercises AS e INNER JOIN routines_exercises AS re ON e.id = re.exercise_id WHERE re.routine_id = ?',
+    'SELECT e.* FROM exercises AS e INNER JOIN routines_exercises AS re ON e.id = re.exercise_id WHERE re.routine_id = ? ORDER BY re.sort_order ASC',
     [routineId],
   );
 }

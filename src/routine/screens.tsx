@@ -5,8 +5,9 @@ import { useExercisesByRoutine, Exercise } from '../exercise/exercises';
 import { SelectExercisesModal } from '../exercise/screens';
 import { StyleSheet, ScrollView, View, Text, TouchableHighlight, Button, TextInput } from 'react-native';
 import { NavigationScreenProps } from 'react-navigation';
-import { getNavParam, getNavParamOrThrow, Screen } from '../utils';
+import { getNavParam, getNavParamOrThrow, Screen, addOrRemove } from '../utils';
 import Icon from 'react-native-vector-icons/FontAwesome5';
+import DraggableFlatList from 'react-native-draggable-flatlist';
 
 export const AllRoutinesScreen: Screen = props => {
   const allRoutines = useAllRoutines();
@@ -70,14 +71,29 @@ export const EditOrCreateRoutine: Screen<{ routineId?: string }> = props => {
         <Text>Name</Text>
         <TextInput onChangeText={e => setName(e)} value={name} />
       </View>
-      <View>
+      <View style={{ height: 200 }}>
         <Text>Exercies</Text>
-        {selectedExercises.map(e => (
-          <View key={e.id}>
-            <Text>{e.name}</Text>
-            <Icon name="trash-alt" />
-          </View>
-        ))}
+        <DraggableFlatList
+          data={selectedExercises}
+          renderItem={({ item, move, moveEnd }) => (
+            <View key={item.id} style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap' }}>
+              <Text style={{ flexGrow: 1 }}>{item.name}</Text>
+              <TouchableHighlight onPressIn={move} onPressOut={moveEnd} style={{ padding: 5 }}>
+                <Icon name="sort" />
+              </TouchableHighlight>
+              <TouchableHighlight
+                style={{ padding: 5 }}
+                onPress={() => {
+                  setSelectedExercises(addOrRemove(item, selectedExercises));
+                }}
+              >
+                <Icon name="trash-alt" />
+              </TouchableHighlight>
+            </View>
+          )}
+          onMoveEnd={({ data }) => setSelectedExercises(data)}
+          keyExtractor={item => item.id}
+        />
         <Button title="Add exercies" onPress={() => setSelectExerciesVisible(true)} />
       </View>
       <SelectExercisesModal
